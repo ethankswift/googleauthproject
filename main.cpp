@@ -44,11 +44,15 @@ int main(int argc, char** argv){
 void printCode(std::future<void> end_flag) {
 
   const CryptoPP::byte k[] = {
-    0x73,0x65,0x63,0x72,0x65,0x74,0x6b,0x65,0x79,0x31,
-    0x73,0x65,0x63,0x72,0x65,0x74,0x6b,0x65,0x79,0x32
+    0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30,
+    0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30
   };
 
-  CryptoPP::byte m[9];
+  CryptoPP::byte m[] = {
+    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01
+  };
+
+  // CryptoPP::byte m[17];
   std::string digest, code;
   unsigned int offset, decimal;
   std::stringstream stream;
@@ -58,7 +62,7 @@ void printCode(std::future<void> end_flag) {
 
     long int periods_since_epoch = (std::chrono::duration_cast< std::chrono::seconds > (std::chrono::system_clock::now().time_since_epoch())).count() / 30;
 
-    strcpy( (char*) m , std::to_string(periods_since_epoch).c_str() );
+    // strcpy( (char*) m , std::to_string(periods_since_epoch).c_str() );
 
     CryptoPP::HexEncoder hex(new CryptoPP::StringSink(digest));
 
@@ -76,8 +80,6 @@ void printCode(std::future<void> end_flag) {
     hex.Put(d, sizeof(d));
     hex.MessageEnd();
 
-    std::cout << digest << '\n';
-
     stream << std::hex << digest[39];
     stream >> offset;
 
@@ -88,15 +90,48 @@ void printCode(std::future<void> end_flag) {
       code = code + digest[2*offset+i];
     }
 
+    switch (code[0]) {
+      case '8':
+      code[0] = '0';
+      break;
+      case '9':
+      code[0] = '1';
+      break;
+      case 'A':
+      code[0] = '2';
+      break;
+      case 'B':
+      code[0] = '3';
+      break;
+      case 'C':
+      code[0] = '4';
+      break;
+      case 'D':
+      code[0] = '5';
+      break;
+      case 'E':
+      code[0] = '6';
+      break;
+      case 'F':
+      code[0] = '7';
+      break;
+
+    }
+
     stream << std::hex << code;
     stream >> decimal;
 
     stream.str("");
     stream.clear();
 
-    std::cout << digest << '\n';
-    std::cout << code << '\n';
-    std::cout << decimal << '\n';
+    printf("message: ");
+    for (size_t i = 0; i < sizeof(m); i++) {
+      printf("%d", m[i]);
+    }
+    printf("\n");
+    std::cout << "digest: " << digest << '\n';
+    std::cout << "hexout: " << code << '\n';
+    std::cout << "code: " << decimal << '\n';
 
     code.clear();
     digest.clear();
