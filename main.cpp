@@ -11,15 +11,16 @@
 #include "cryptopp820/hex.h"
 #include "cryptopp820/sha.h"
 #include "cryptopp820/hmac.h"
+#include "qrcodegen/QrCode.hpp"
 
 void printCode(std::future<void> end_flag);
 
 
 int main(int argc, char** argv){
 
-  int c;
-
   if (argv[1] != NULL && argv[1] == std::string("--get-otp")) {
+
+    int c;
 
     std::promise<void> exit_signal;
 
@@ -29,7 +30,7 @@ int main(int argc, char** argv){
 
     counter.detach();
 
-    std::cout << "Printing codes every seconds, press enter to terminate..." << '\n';
+    std::cout << "Printing codes every 15 seconds, press enter to terminate..." << '\n';
 
     c = getchar();
 
@@ -48,12 +49,10 @@ void printCode(std::future<void> end_flag) {
     0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30
   };
 
-  CryptoPP::byte m[] = {
-    0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x01
-  };
+  CryptoPP::byte m[8];
 
   // CryptoPP::byte m[17];
-  std::string digest, code;
+  std::string hexmessage, digest, code;
   unsigned int offset, decimal;
   std::stringstream stream;
 
@@ -62,7 +61,28 @@ void printCode(std::future<void> end_flag) {
 
     long int periods_since_epoch = (std::chrono::duration_cast< std::chrono::seconds > (std::chrono::system_clock::now().time_since_epoch())).count() / 30;
 
-    // strcpy( (char*) m , std::to_string(periods_since_epoch).c_str() );
+    stream << std::hex << periods_since_epoch;
+    stream >> hexmessage;
+
+    stream.str("");
+    stream.clear();
+
+    if (hexmessage.length() % 2 != 0) {
+      hexmessage = "0" + hexmessage;
+    }
+
+    for (size_t i = 0; i < hexmessage.length(); i += 2) {
+      std::string byte_string = hexmessage.substr(hexmessage.length() - (i+2) ,2);
+      CryptoPP::byte byte_byte = (unsigned char) strtol(byte_string.c_str(), NULL, 16);
+      m[(hexmessage.length() - 1 - i/2)] = byte_byte;
+    }
+
+    // std::cout << hexmessage << '\n';
+    //
+    // for (size_t i = 0; i < sizeof(m); i++) {
+    //   std::cout << (int)m[i] << " ";
+    // }
+    // std::cout << '\n';
 
     CryptoPP::HexEncoder hex(new CryptoPP::StringSink(digest));
 
@@ -115,11 +135,12 @@ void printCode(std::future<void> end_flag) {
       case 'F':
       code[0] = '7';
       break;
-
     }
 
     stream << std::hex << code;
     stream >> decimal;
+
+    decimal = decimal % (1000000);
 
     stream.str("");
     stream.clear();
@@ -131,15 +152,11 @@ void printCode(std::future<void> end_flag) {
     printf("\n");
     std::cout << "digest: " << digest << '\n';
     std::cout << "hexout: " << code << '\n';
-    std::cout << "code: " << decimal << '\n';
+    std::cout << "code: " << std::setfill('0') << std::setw(5) << decimal << '\n';
 
     code.clear();
     digest.clear();
 
-
-
-
-
-    std::this_thread::sleep_for (std::chrono::seconds(5));
+    std::this_thread::sleep_for (std::chrono::seconds(15));
   }
 }
