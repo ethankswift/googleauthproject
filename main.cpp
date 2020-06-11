@@ -1,5 +1,7 @@
 #include <chrono>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <string>
 #include <thread>
@@ -15,6 +17,7 @@
 
 void printCode(std::future<void> end_flag);
 
+static void printQr(const qrcodegen::QrCode &qr);
 
 int main(int argc, char** argv){
 
@@ -30,15 +33,31 @@ int main(int argc, char** argv){
 
     counter.detach();
 
-    std::cout << "Printing codes every 15 seconds, press enter to terminate..." << '\n';
+    std::cout << "Printing codes every 30 seconds, press enter to terminate..." << '\n' << std::endl;
 
     c = getchar();
 
     exit_signal.set_value();
 
+    return 0;
+
   }
 
-  return 0;
+  if (argv[1] != NULL && argv[1] == std::string("--generate-qr")) {
+
+      const qrcodegen::QrCode qr = qrcodegen::QrCode::encodeText("otpauth://totp/ORST:user@oregonstate.edu?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&issuer=ORST&algorithm=SHA1&digits=6&period=30", qrcodegen::QrCode::Ecc::HIGH);
+
+      std::string qr_string = qr.toSvgString(4);
+
+      std::ofstream out;
+      out.open ("qr.svg");
+      out << qr_string;
+      out.close();
+
+      return 0;
+  }
+
+  return 1;
 }
 
 
@@ -145,18 +164,11 @@ void printCode(std::future<void> end_flag) {
     stream.str("");
     stream.clear();
 
-    printf("message: ");
-    for (size_t i = 0; i < sizeof(m); i++) {
-      printf("%d", m[i]);
-    }
-    printf("\n");
-    std::cout << "digest: " << digest << '\n';
-    std::cout << "hexout: " << code << '\n';
-    std::cout << "code: " << std::setfill('0') << std::setw(5) << decimal << '\n';
+    std::cout << "code: " << std::setfill('0') << std::setw(6) << decimal << '\n' << std::endl;
 
     code.clear();
     digest.clear();
 
-    std::this_thread::sleep_for (std::chrono::seconds(15));
+    std::this_thread::sleep_for (std::chrono::seconds(30));
   }
 }
